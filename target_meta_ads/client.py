@@ -105,22 +105,4 @@ class MetaAdsBatchSink(MetaAdsSink, HotglueBatchSink):
         """
         return {"state_updates": []}
 
-    def process_batch(self, context: dict) -> None:
-        # TODO: adjust batch processing or use the SDK default behavior.
-        if not self.latest_state:
-            self.init_state()
-
-        raw_records = context["records"]
-
-        records = list(
-            map(lambda e: self.process_batch_record(e[1], e[0]), enumerate(raw_records))
-        )
-
-        response = self.make_batch_request(records)
-
-        result = self.handle_batch_response(response)
-
-        for state in result.get("state_updates", list()):
-            self.update_state(state)
-
 
