@@ -81,11 +81,11 @@ class AudiencesSink(MetaAdsRecordSink):
         return record_id, True, state_updates
 
 
-class AudienceMembersSink(MetaAdsBatchSink):
-    """Add hashed emails/phones to a Meta Custom Audience."""
+class AudienceUsersSink(MetaAdsBatchSink):
+    """Upload hashed emails and phones to a Custom Audience users endpoint."""
 
-    name = "AudienceMembers"
     max_size = MAX_MEMBERS_PER_REQUEST
+    http_method = "POST"
 
     def process_batch_record(self, record: dict, _index: int) -> dict:
         audience_id = (
@@ -95,7 +95,7 @@ class AudienceMembersSink(MetaAdsBatchSink):
         )
         if not audience_id:
             raise ValueError(
-                "AudienceMembers records require audienceId "
+                f"{self.name} records require audienceId "
                 "(or productDestinationId / customAudienceId)"
             )
 
@@ -103,7 +103,7 @@ class AudienceMembersSink(MetaAdsBatchSink):
         phone = record.get("phone") or record.get("phoneNumber")
         if not email and not phone:
             raise ValueError(
-                "AudienceMembers records require email and/or phone/phoneNumber"
+                f"{self.name} records require email and/or phone/phoneNumber"
             )
 
         external_id = record.get("externalId") or record.get("id")
@@ -115,7 +115,7 @@ class AudienceMembersSink(MetaAdsBatchSink):
         }
 
     def make_batch_request(self, records: list[dict]) -> list[dict[str, Any]]:
-        """Send one users upload per audienceId group."""
+        """Send one users request per audienceId group."""
         groups: dict[str, list[dict]] = defaultdict(list)
         for record in records:
             groups[record["_audienceId"]].append(record)
@@ -124,7 +124,7 @@ class AudienceMembersSink(MetaAdsBatchSink):
         for audience_id, group in groups.items():
             payload = self._build_payload(group)
             response = self.request_api(
-                "POST",
+                self.http_method,
                 f"/{audience_id}/users",
                 request_data={"payload": payload},
             )
@@ -179,3 +179,16 @@ class AudienceMembersSink(MetaAdsBatchSink):
             "schema": "EMAIL_SHA256",
             "data": [item["_email"] for item in records],
         }
+
+
+class AudienceMembersSink(AudienceUsersSink):
+    """Add hashed emails and phones to a Meta Custom Audience."""
+
+    name = "AudienceMembers"
+
+
+class RemoveAudienceMembersSink(AudienceUsersSink):
+    """Remove hashed emails and phones from a Meta Custom Audience."""
+
+    name = "RemoveAudienceMembers"
+    http_method = "DELETE"

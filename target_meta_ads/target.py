@@ -6,14 +6,18 @@ from __future__ import annotations
 from hotglue_singer_sdk import typing as th
 from hotglue_singer_sdk.target_sdk.target import TargetHotglue
 from target_meta_ads.auth import MetaAdsAuthenticator
-from target_meta_ads.sinks import AudiencesSink, AudienceMembersSink
+from target_meta_ads.sinks import (
+    AudiencesSink,
+    AudienceMembersSink,
+    RemoveAudienceMembersSink,
+)
 
 
 class TargetMetaAds(TargetHotglue):
     """Target for MetaAds."""
 
     name = "target-meta-ads"
-    SINK_TYPES = [AudiencesSink, AudienceMembersSink]
+    SINK_TYPES = [AudiencesSink, AudienceMembersSink, RemoveAudienceMembersSink]
 
     config_jsonschema = th.PropertiesList(
         th.Property(
