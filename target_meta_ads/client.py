@@ -6,18 +6,25 @@ from abc import abstractmethod
 from typing import Any
 
 
+from hotglue_singer_sdk.plugin_base import PluginBase
 from hotglue_singer_sdk.target_sdk.client import HotglueBaseSink, HotglueBatchSink, HotglueSink
 
 
 class MetaAdsSink(HotglueBaseSink):
     """MetaAds Base target sink class for sinks."""
     base_url = "https://graph.facebook.com/v26.0"
-    auth_state = {}
 
-    @property
-    def authenticator(self) -> Any:
-        authenticator, auth_endpoint = self._target.access_token_support(self._target)
-        return authenticator(self._target, self.auth_state, auth_endpoint)
+    def __init__(
+        self,
+        target: PluginBase,
+        stream_name: str,
+        schema: dict,
+        key_properties: list[str] | None,
+    ) -> None:
+        """Initialize the sink and a single authenticator for its lifetime."""
+        super().__init__(target, stream_name, schema, key_properties)
+        authenticator_class, auth_endpoint = self._target.access_token_support(self._target)
+        self.authenticator = authenticator_class(self._target, {}, auth_endpoint)
 
     @property
     def account_id(self) -> str:
