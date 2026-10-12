@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Hotglue
 """MetaAds target sink class, which handles writing streams."""
 
 from __future__ import annotations
@@ -47,10 +48,11 @@ class AudiencesSink(MetaAdsRecordSink):
     def endpoint(self) -> str:
         return f"/{self.account_id}/customaudiences"
 
-    def preprocess_record(self, record: dict, context: dict) -> dict:
+    def preprocess_record(self, record: dict, _context: dict) -> dict:
         name = record.get("name")
         if not name:
-            raise ValueError("Audiences records require name")
+            message = "Audiences records require name"
+            raise ValueError(message)
 
         payload = {
             "id": record.get("id"),
@@ -63,7 +65,7 @@ class AudiencesSink(MetaAdsRecordSink):
         }
         return self.clean_payload(payload)
 
-    def upsert_record(self, record: dict, context: dict) -> tuple:
+    def upsert_record(self, record: dict, _context: dict) -> tuple:
         state_updates = {}
         pk = record.pop("id", None)
         # Graph API uses POST for both create and update.
@@ -94,17 +96,17 @@ class AudienceUsersSink(MetaAdsBatchSink):
             or record.get("customAudienceId")
         )
         if not audience_id:
-            raise ValueError(
+            message = (
                 f"{self.name} records require audienceId "
                 "(or productDestinationId / customAudienceId)"
             )
+            raise ValueError(message)
 
         email = record.get("email")
         phone = record.get("phone") or record.get("phoneNumber")
         if not email and not phone:
-            raise ValueError(
-                f"{self.name} records require email and/or phone/phoneNumber"
-            )
+            message = f"{self.name} records require email and/or phone/phoneNumber"
+            raise ValueError(message)
 
         external_id = record.get("externalId") or record.get("id")
         return {
@@ -141,8 +143,7 @@ class AudienceUsersSink(MetaAdsBatchSink):
             warning = None
             if body.get("num_invalid_entries"):
                 warning = (
-                    f"num_invalid_entries={body['num_invalid_entries']}; "
-                    f"samples={invalid_samples}"
+                    f"num_invalid_entries={body['num_invalid_entries']}; samples={invalid_samples}"
                 )
 
             for item in result["records"]:
@@ -165,10 +166,7 @@ class AudienceUsersSink(MetaAdsBatchSink):
         if has_email and has_phone:
             return {
                 "schema": ["EMAIL", "PHONE"],
-                "data": [
-                    [item.get("_email") or "", item.get("_phone") or ""]
-                    for item in records
-                ],
+                "data": [[item.get("_email") or "", item.get("_phone") or ""] for item in records],
             }
         if has_phone:
             return {

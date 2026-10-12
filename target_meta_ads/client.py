@@ -1,17 +1,20 @@
+# Copyright (c) 2026 Hotglue
 """HTTP client and sink base classes for MetaAds."""
 
-
 from __future__ import annotations
+
 from abc import abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-
-from hotglue_singer_sdk.plugin_base import PluginBase
 from hotglue_singer_sdk.target_sdk.client import HotglueBaseSink, HotglueBatchSink, HotglueSink
+
+if TYPE_CHECKING:
+    from hotglue_singer_sdk.plugin_base import PluginBase
 
 
 class MetaAdsSink(HotglueBaseSink):
     """MetaAds Base target sink class for sinks."""
+
     base_url = "https://graph.facebook.com/v26.0"
 
     def __init__(
@@ -40,11 +43,11 @@ class MetaAdsRecordSink(MetaAdsSink, HotglueSink):
 
     name = "MetaAdsRecordSink"
 
-    def preprocess_record(self, record: dict, context: dict) -> dict:
+    def preprocess_record(self, record: dict, _context: dict) -> dict:
         # TODO: preprocess each record if needed (SDK calls this for every record).
         return record
 
-    def upsert_record(self, record: dict, context: dict) -> None:
+    def upsert_record(self, record: dict, _context: dict) -> None:
         # Called for each record on all sinks unless overridden.
         state_updates = {}
         pk_field = self.key_properties[0] if self.key_properties else "id"
@@ -62,9 +65,6 @@ class MetaAdsRecordSink(MetaAdsSink, HotglueSink):
         return record_id, True, state_updates
 
 
-
-
-
 class MetaAdsBatchSink(MetaAdsSink, HotglueBatchSink):
     """MetaAds Batch target sink class for batch sinks."""
 
@@ -76,40 +76,12 @@ class MetaAdsBatchSink(MetaAdsSink, HotglueBatchSink):
     @abstractmethod
     def make_batch_request(self, records: list[dict]) -> Any:
         # TODO: build the batch API request (SDK calls this per batch).
-        method = "POST"
-        endpoint = self.endpoint
-        response = self.request_api(method, endpoint, request_data=records)
-        return response
+        return self.request_api("POST", self.endpoint, request_data=records)
 
     def handle_batch_response(self, _response: Any) -> dict:
-        """
-        This method should return a dict with a key named "state_updates".
-        This key should be an array of all state updates per record.
-        Created ids and errors can be fetched from the response.
+        """Return per-record state updates from the batch response.
 
-        e.g. succesful creation, unsucessful request, successful update
-        {
-            "state_updates": [
-                {
-                    "record_id": "123",
-                    "externalId": "Source-data-id-1",
-                    "success": True
-                },
-                {
-                    "externalId": "Source-data-id-2",
-                    "success": False,
-                    "error": "Error message"
-                },
-                {
-                    "id": "1234",
-                    "externalId": "Source-data-id-3",
-                    "success": True,
-                    "is_updated": True
-                }
-            ]
-        }
-
+        ``state_updates`` has one entry per input record, with ``success`` and
+        any available ``id``, ``externalId``, ``error``, or ``is_updated``.
         """
         return {"state_updates": []}
-
-

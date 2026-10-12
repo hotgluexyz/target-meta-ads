@@ -1,5 +1,5 @@
+# Copyright (c) 2026 Hotglue
 """MetaAds target class."""
-
 
 from __future__ import annotations
 
@@ -59,11 +59,16 @@ class TargetMetaAds(TargetHotglue):
     ).to_dict()
 
     @classmethod
-    def access_token_support(cls, connector=None):
+    def access_token_support(
+        cls,
+        _connector: object | None = None,
+    ) -> tuple[type[MetaAdsAuthenticator], str]:
+        """Return the OAuth authenticator class and token endpoint."""
         return (
             MetaAdsAuthenticator,
             "https://graph.facebook.com/v26.0/oauth/access_token",
         )
+
 
 if __name__ == "__main__":
     TargetMetaAds.cli()

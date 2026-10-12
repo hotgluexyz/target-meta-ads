@@ -1,11 +1,15 @@
+# Copyright (c) 2026 Hotglue
 """Authentication helpers for MetaAds."""
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Optional
+from typing import TYPE_CHECKING, Any
 
 from hotglue_singer_sdk.target_sdk.auth import OAuthAuthenticator
+
+if TYPE_CHECKING:
+    from hotglue_singer_sdk.plugin_base import PluginBase
 
 # Absolute Unix expiry timestamps are well above this; relative TTLs are not.
 _ABSOLUTE_EXPIRY_THRESHOLD = 1_000_000_000
@@ -16,9 +20,9 @@ class MetaAdsAuthenticator(OAuthAuthenticator):
 
     def __init__(
         self,
-        target,
-        state,
-        auth_endpoint: Optional[str] = None,
+        target: PluginBase,
+        state: dict[str, Any],
+        auth_endpoint: str | None = None,
     ) -> None:
         """Initialize the authenticator.
 
