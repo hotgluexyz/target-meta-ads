@@ -1,19 +1,23 @@
+# Copyright (c) 2026 Hotglue
 """MetaAds target class."""
-
 
 from __future__ import annotations
 
 from hotglue_singer_sdk import typing as th
 from hotglue_singer_sdk.target_sdk.target import TargetHotglue
 from target_meta_ads.auth import MetaAdsAuthenticator
-from target_meta_ads.sinks import AudiencesSink, AudienceMembersSink
+from target_meta_ads.sinks import (
+    AudiencesSink,
+    AudienceMembersSink,
+    RemoveAudienceMembersSink,
+)
 
 
 class TargetMetaAds(TargetHotglue):
     """Target for MetaAds."""
 
     name = "target-meta-ads"
-    SINK_TYPES = [AudiencesSink, AudienceMembersSink]
+    SINK_TYPES = [AudiencesSink, AudienceMembersSink, RemoveAudienceMembersSink]
 
     config_jsonschema = th.PropertiesList(
         th.Property(
@@ -55,11 +59,16 @@ class TargetMetaAds(TargetHotglue):
     ).to_dict()
 
     @classmethod
-    def access_token_support(cls, connector=None):
+    def access_token_support(
+        cls,
+        _connector: object | None = None,
+    ) -> tuple[type[MetaAdsAuthenticator], str]:
+        """Return the OAuth authenticator class and token endpoint."""
         return (
             MetaAdsAuthenticator,
             "https://graph.facebook.com/v26.0/oauth/access_token",
         )
+
 
 if __name__ == "__main__":
     TargetMetaAds.cli()

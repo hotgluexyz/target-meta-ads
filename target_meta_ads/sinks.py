@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Hotglue
 """MetaAds target sink class, which handles writing streams."""
 
 from __future__ import annotations
@@ -47,10 +48,11 @@ class AudiencesSink(MetaAdsRecordSink):
     def endpoint(self) -> str:
         return f"/{self.account_id}/customaudiences"
 
-    def preprocess_record(self, record: dict, context: dict) -> dict:
+    def preprocess_record(self, record: dict, _context: dict) -> dict:
         name = record.get("name")
         if not name:
-            raise ValueError("Audiences records require name")
+            message = "Audiences records require name"
+            raise ValueError(message)
 
         payload = {
             "id": record.get("id"),
@@ -63,7 +65,7 @@ class AudiencesSink(MetaAdsRecordSink):
         }
         return self.clean_payload(payload)
 
-    def upsert_record(self, record: dict, context: dict) -> tuple:
+    def upsert_record(self, record: dict, _context: dict) -> tuple:
         state_updates = {}
         pk = record.pop("id", None)
         # Graph API uses POST for both create and update.
@@ -81,11 +83,11 @@ class AudiencesSink(MetaAdsRecordSink):
         return record_id, True, state_updates
 
 
-class AudienceMembersSink(MetaAdsBatchSink):
-    """Add hashed emails/phones to a Meta Custom Audience."""
+class AudienceUsersSink(MetaAdsBatchSink):
+    """Upload hashed emails and phones to a Custom Audience users endpoint."""
 
-    name = "AudienceMembers"
     max_size = MAX_MEMBERS_PER_REQUEST
+    http_method = "POST"
 
     def process_batch_record(self, record: dict, _index: int) -> dict:
         audience_id = (
@@ -94,17 +96,17 @@ class AudienceMembersSink(MetaAdsBatchSink):
             or record.get("customAudienceId")
         )
         if not audience_id:
-            raise ValueError(
-                "AudienceMembers records require audienceId "
+            message = (
+                f"{self.name} records require audienceId "
                 "(or productDestinationId / customAudienceId)"
             )
+            raise ValueError(message)
 
         email = record.get("email")
         phone = record.get("phone") or record.get("phoneNumber")
         if not email and not phone:
-            raise ValueError(
-                "AudienceMembers records require email and/or phone/phoneNumber"
-            )
+            message = f"{self.name} records require email and/or phone/phoneNumber"
+            raise ValueError(message)
 
         external_id = record.get("externalId") or record.get("id")
         return {
@@ -115,7 +117,7 @@ class AudienceMembersSink(MetaAdsBatchSink):
         }
 
     def make_batch_request(self, records: list[dict]) -> list[dict[str, Any]]:
-        """Send one users upload per audienceId group."""
+        """Send one users request per audienceId group."""
         groups: dict[str, list[dict]] = defaultdict(list)
         for record in records:
             groups[record["_audienceId"]].append(record)
@@ -124,7 +126,7 @@ class AudienceMembersSink(MetaAdsBatchSink):
         for audience_id, group in groups.items():
             payload = self._build_payload(group)
             response = self.request_api(
-                "POST",
+                self.http_method,
                 f"/{audience_id}/users",
                 request_data={"payload": payload},
             )
@@ -141,8 +143,7 @@ class AudienceMembersSink(MetaAdsBatchSink):
             warning = None
             if body.get("num_invalid_entries"):
                 warning = (
-                    f"num_invalid_entries={body['num_invalid_entries']}; "
-                    f"samples={invalid_samples}"
+                    f"num_invalid_entries={body['num_invalid_entries']}; samples={invalid_samples}"
                 )
 
             for item in result["records"]:
@@ -165,10 +166,7 @@ class AudienceMembersSink(MetaAdsBatchSink):
         if has_email and has_phone:
             return {
                 "schema": ["EMAIL", "PHONE"],
-                "data": [
-                    [item.get("_email") or "", item.get("_phone") or ""]
-                    for item in records
-                ],
+                "data": [[item.get("_email") or "", item.get("_phone") or ""] for item in records],
             }
         if has_phone:
             return {
@@ -179,3 +177,16 @@ class AudienceMembersSink(MetaAdsBatchSink):
             "schema": "EMAIL_SHA256",
             "data": [item["_email"] for item in records],
         }
+
+
+class AudienceMembersSink(AudienceUsersSink):
+    """Add hashed emails and phones to a Meta Custom Audience."""
+
+    name = "AudienceMembers"
+
+
+class RemoveAudienceMembersSink(AudienceUsersSink):
+    """Remove hashed emails and phones from a Meta Custom Audience."""
+
+    name = "RemoveAudienceMembers"
+    http_method = "DELETE"

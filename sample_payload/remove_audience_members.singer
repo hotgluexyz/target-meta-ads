@@ -1,0 +1,5 @@
+{"type": "SCHEMA", "stream": "RemoveAudienceMembers", "schema": {"type": ["object", "null"], "properties": {"id": {"type": ["string", "null"]}, "externalId": {"type": ["string", "null"]}, "audienceId": {"type": ["string", "null"]}, "email": {"type": ["string", "null"]}, "phone": {"type": ["string", "null"]}, "phoneNumber": {"type": ["string", "null"]}}}, "key_properties": ["externalId"]}
+{"type": "RECORD", "stream": "RemoveAudienceMembers", "record": {"externalId": "member-1", "audienceId": "120250879058520253", "email": "alice@example.com", "phone": "+1 555-987-6543"}}
+{"type": "RECORD", "stream": "RemoveAudienceMembers", "record": {"externalId": "member-2", "audienceId": "120250879058520253", "email": "bob@example.com"}}
+{"type": "RECORD", "stream": "RemoveAudienceMembers", "record": {"externalId": "member-3", "audienceId": "120250879058520253", "email": "carol@example.com", "phoneNumber": "15551234567"}}
+{"type": "STATE", "value": {}}

@@ -26,6 +26,7 @@ dev = [
 [tool.ruff]
 line-length = 100
 required-version = ">=0.15"
+extend-exclude = ["*.md"]
 
 [tool.ruff.lint]
 future-annotations = true
