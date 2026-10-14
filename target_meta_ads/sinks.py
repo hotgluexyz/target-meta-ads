@@ -88,6 +88,16 @@ class AudienceUsersSink(MetaAdsBatchSink):
 
     max_size = MAX_MEMBERS_PER_REQUEST
     http_method = "POST"
+    relation_fields = [
+        {
+            "field": "productDestinationId",
+            "objectName": "Audiences",
+        },
+        {
+            "field": "audienceId",
+            "objectName": "Audiences",
+        },
+    ]
 
     def process_batch_record(self, record: dict, _index: int) -> dict:
         audience_id = (
